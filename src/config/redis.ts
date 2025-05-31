@@ -1,84 +1,22 @@
-import IORedis, { Redis } from "ioredis";
-import { env } from "./env";
+import { createClient } from 'redis';
+import { config } from './index';
 
-class RedisClient {
-  private static instance: RedisClient;
-  private client: Redis | null = null;
-  private isConnected = false;
+let client: ReturnType<typeof createClient>;
 
-  private constructor() {}
-
-  public static getInstance(): RedisClient {
-    if (!RedisClient.instance) {
-      RedisClient.instance = new RedisClient();
-    }
-    return RedisClient.instance;
-  }
-
-  public async connect(): Promise<void> {
-    if (this.isConnected && this.client) return;
-
-    this.client = new IORedis(env.REDIS_URL,{
-      maxRetriesPerRequest: 10, 
-      retryStrategy: (times) => Math.min(times * 50, 2000)
-
+export async function connectRedis() {
+  if (!client) {
+    client = createClient({
+      url: config.redis.uri,
     });
 
-    await new Promise<void>((resolve, reject) => {
-      this.client!.once("ready", () => {
-        this.isConnected = true;
-        console.log("Connected to Redis");
-        resolve();
-      });
-
-      this.client!.once("error", (err) => {
-        console.error("Redis connection error:", err);
-        this.isConnected = false;
-        reject(err);
-      });
-    });
-
-    this.client.on("close", () => {
-      this.isConnected = false;
-      console.log("Redis connection closed");
-    });
+    client.on('error', (err) => console.error('Redis Client Error:', err));
+    await client.connect();
   }
-
-  public getClient(): Redis {
-    if (!this.client || !this.isConnected) {
-      throw new Error("Redis client not connected. Call connect() first.");
-    }
-    return this.client;
-  }
-
-  public async close(): Promise<void> {
-    if (this.client && this.isConnected) {
-      await this.client.quit();
-      this.isConnected = false;
-      console.log("Redis connection closed");
-    }
-  }
-
-  public async publish(channel: string, message: string): Promise<number> {
-    const client = this.getClient();
-    return await client.publish(channel, message);
-  }
-
-  public async subscribe(
-    channel: string,
-    callback: (message: string) => void
-  ): Promise<void> {
-    const client = this.getClient();
-    await client.subscribe(channel);
-    client.on("message", (ch, msg) => {
-      if (ch === channel) {
-        callback(msg);
-      }
-    });
-  }
+  return client;
 }
 
-export const redis = RedisClient.getInstance();
-export const connectRedis = async (): Promise<void> => await redis.connect();
-export const getRedisClient = (): Redis => redis.getClient();
-export const closeRedis = async (): Promise<void> => await redis.close();
+export async function closeRedis() {
+  if (client) {
+    await client.quit();
+  }
+} 

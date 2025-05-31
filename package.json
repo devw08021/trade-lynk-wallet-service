@@ -1,32 +1,34 @@
 {
-  "name": "user-service",
+  "name": "wallet-service",
   "version": "1.0.0",
-  "description": "User service for Trade-Lynk using Bun.js, Hono, MongoDB, and Redis",
+  "description": "Wallet service for Trade-Lynk handling multiple cryptocurrencies",
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "bun run --watch src/index.ts",
-    "start": "bun run src/index.ts",
-    "build": "bun build src/index.ts --outdir dist --bundle --target=bun",
-    "compile": "bun build src/index.ts --compile --target=bun",
+    "dev": "dotenv -e local.env -- bun run --watch src/index.ts",
+    "start": "dotenv -e dev.env -- bun run src/index.ts",
+    "build": "bun build src/index.ts --outdir dist",
     "test": "bun test"
   },
   "dependencies": {
-    "aws-sdk": "^2.1692.0",
-    "bcrypt": "^5.1.1",
+    "bitcoinjs-lib": "^6.1.5",
+    "dotenv": "^16.4.5",
     "hono": "^4.5.0",
-    "ioredis": "^5.6.1",
-    "mock-aws-s3": "^4.0.2",
-    "mongoose": "^8.15.0",
-    "mongoose-lean-virtuals": "^2.0.0",
-    "nock": "^14.0.4",
-    "otpauth": "^9.4.0",
+    "jose": "^6.0.11",
+    "kafkajs": "^2.2.4",
+    "mongodb": "^6.5.0",
+    "mongoose": "^8.15.1",
+    "node-fetch": "^3.3.2",
+    "redis": "^4.6.13",
+    "tronweb": "^5.3.1",
+    "web3": "^4.5.0",
     "zod": "^3.22.4"
   },
   "devDependencies": {
-    "@types/bcrypt": "^5.0.2",
+    "@types/bitcoinjs-lib": "^5.0.4",
     "@types/node": "^20.11.25",
-    "bun-types": "latest"
+    "bun-types": "latest",
+    "dotenv-cli": "^8.0.0"
   },
   "peerDependencies": {
     "typescript": "^5.0.0"

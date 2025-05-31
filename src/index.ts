@@ -1,95 +1,56 @@
-import { Hono } from "hono";
-import { logger } from "hono/logger";
-import { cors } from "hono/cors";
-import authRoutes from "./routes/authRoutes";
-import userRoutes from "./routes/userRoutes";
-import { connect } from "./config/database";
-import { connectRedis, getRedisClient, closeRedis } from "./config/redis";
-import { env } from "./config/env";
-import { ApiError } from './utils/error';
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { logger } from 'hono/logger';
+import { prettyJSON } from 'hono/pretty-json';
+import { config } from './config';
+import { walletRoutes } from './routes/wallet.routes';
+// import { transactionRoutes } from './routes/transaction.routes';
+// import { webhookRoutes } from './routes/webhook.routes';
+import { errorHandler } from './middleware/error.middleware';
+import { connectDB } from './config/database';
+import { connectRedis } from './config/redis';
+import { startDepositConsumer, getKafkaStatus } from './services/kafka.service';
 
-let app: Hono;
+const app = new Hono();
 
-const shutdown = async () => {
-  console.log("Shutting down...");
+// Middleware
+app.use('*', logger());
+app.use('*', prettyJSON());
+app.use('*', cors());
+app.use('*', errorHandler);
+
+// Routes
+app.route('/api/v1/wallets', walletRoutes);
+// app.route('/api/v1/transactions', transactionRoutes);
+// app.route('/api/v1/webhooks', webhookRoutes);
+
+// Health check
+app.get('/health', (c) => c.json({ status: 'ok' }));
+
+// Kafka status/debug endpoint
+app.get('/kafka-status', (c) => c.json(getKafkaStatus()));
+
+// Initialize connections
+const init = async () => {
   try {
-    await closeRedis();
-    console.log("All connections closed");
-  } catch (error) {
-    console.error("Error during shutdown:", error);
-  }
-  process.exit(0);
-};
-
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-
-async function bootstrap() {
-  try {
-    // 1. Connect to DB
-    await connect();
-
-    // 2. Connect to Redis
+    await connectDB();
     await connectRedis();
-
-    // 3. Redis Subscriber Setup (Optional)
-    try {
-      // const redisClient = getRedisClient(); // Now safe
-      // const subscriber = redisClient.duplicate();
-
-
-      // await subscriber.subscribe("user-events", (message) => {
-      //   console.log("Received user event:", message);
-      // });
-    } catch (error) {
-      console.error("Failed to set up Redis subscription:", error);
-    }
-
-    // 4. Only now initialize Hono app
-    app = new Hono();
-
-
-    app.use("*", logger());
-    app.use("*", cors());
-
-    // 1) set up error handler
-    app.onError((err, c) => {
-      if (err instanceof ApiError) {
-        return c.json({ success: false, errors: err.info }, err.status);
-      }
-      if (process.env.NODE_ENV !== 'production') console.error(err);
-      return c.json(
-        {
-          success: false,
-          errors: {
-            code: 'INTERNAL_SERVER_ERROR',
-            message: 'Internal Server Error',
-          },
-        },
-        500
-      );
-    });
-
-    // ✅ Routes are only registered after DB is ready
-    app.route("/api/auth", authRoutes);
-    app.route("/api/user", userRoutes);
-
-    // not found handler
-    app.notFound((c) => {
-      return c.json({ success: false, message: "Not Found" }, 404);
-    });
-
-
+    await startDepositConsumer();
+    console.log('Connected to MongoDB and Redis');
   } catch (error) {
-    console.error("Failed to start user-service:", error);
+    console.error('Failed to initialize connections:', error);
     process.exit(1);
   }
-}
+};
 
-bootstrap();
+// Start server
+const port = config.PORT || 3001;
+console.log(`Server is running on port ${port}`);
 
 export default {
-  port: env.PORT,
-  fetch: (req: Request, env: unknown, ctx: ExecutionContext) =>
-    app.fetch(req, env, ctx),
+  port,
+  fetch: app.fetch,
 };
+
+// Initialize and start
+init(); 
