@@ -1,59 +1,37 @@
 import { Hono } from 'hono';
-import { WalletController } from '../controllers/wallet.controller';
+import { WalletController } from '../controllers/index';
 import { authMiddleware } from '../middleware/auth.middleware';
 
-export const walletRoutes = new Hono();
 
-walletRoutes.use('*', authMiddleware);
+// initalize controler
+const waltCtrl = new WalletController();
 
-// Create a new wallet
-walletRoutes.post('/', (c) => {
-  const controller = c.get('walletController') as WalletController;
-  return controller.createWallet(c);
-});
+const walletRoutes = new Hono();
+
+// walletRoutes.use('*', authMiddleware);
+
+// create a new wallet
+walletRoutes.post('/createWallet', (c) => waltCtrl.createWallet(c))
+
 
 // Get a specific wallet
-walletRoutes.get('/:currency', (c) => {
-  const controller = c.get('walletController') as WalletController;
-  return controller.getWallet(c);
-});
-
+walletRoutes.get('/getWallets/:currency', (c) => waltCtrl.getWallet(c))
 // Get all wallets for a user
-walletRoutes.get('/', (c) => {
-  const controller = c.get('walletController') as WalletController;
-  return controller.getWallets(c);
-});
 
+walletRoutes.get('/getWallets', (c) => waltCtrl.getWallets(c))
 // Send a transaction
-walletRoutes.post('/:walletId/transactions', (c) => {
-  const controller = c.get('walletController') as WalletController;
-  return controller.sendTransaction(c);
-});
+walletRoutes.post('/:walletId/transactions', (c) => waltCtrl.sendTransaction(c))
 
 // Get transaction history
-walletRoutes.get('/:walletId/transactions', (c) => {
-  const controller = c.get('walletController') as WalletController;
-  return controller.getTransactionHistory(c);
-});
+walletRoutes.get('/:walletId/transactions', (c) => waltCtrl.getTransactionHistory(c))
 
 // Get a specific transaction
-walletRoutes.get('/transactions/:txHash', (c) => {
-  const controller = c.get('walletController') as WalletController;
-  return controller.getTransaction(c);
-});
+walletRoutes.get('/transactions/:txHash', (c) => waltCtrl.getTransaction(c))
 
 // Webhook endpoint for blockchain notifications
-walletRoutes.post('/webhooks/:currency', (c) => {
-  const controller = c.get('walletController') as WalletController;
-  return controller.processWebhook(c);
-});
+walletRoutes.post('/webhooks/:currency', (c) => waltCtrl.processWebhook(c))
 
-walletRoutes.post('/create-address', (c) => {
-  const controller = c.get('walletController');
-  return controller.createAddress(c);
-});
+walletRoutes.post('/create-address', (c) => waltCtrl.createAddress(c))
+walletRoutes.post('/withdraw', (c) => waltCtrl.withdrawRequest(c))
 
-walletRoutes.post('/withdraw', (c) => {
-  const controller = c.get('walletController');
-  return controller.withdrawRequest(c);
-}); 
+export default walletRoutes;

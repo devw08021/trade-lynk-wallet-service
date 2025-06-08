@@ -1,98 +1,130 @@
-import { Collection, MongoClient } from 'mongodb';
-import { Wallet, Transaction } from '../models/wallet.model';
-import { BlockchainAdapter, BitcoinAdapter, EthereumAdapter, TronAdapter, BnbAdapter } from '../adapters/blockchain.adapter';
-import { config } from '../config';
-import { WalletModel, WalletType, WalletDocument } from '../models/wallet.model';
-import { connectRedis } from '../config/redis';
-import { CurrencyModel } from '../models/currency.model';
-import { Types } from 'mongoose';
-import { depositHashService } from './depositHash.service';
-import { transactionService } from './transaction.service';
+import { getRepository } from "@/models/repositoryFactory";
+import { WalletModel, CurrencyModel } from "@/models/schemas/index";
 
-const EVM_SERVERS = ['ETH', 'BNB', 'POLYGON']; // Example
-const NON_EVM_SYMBOLS = ['BTC', 'LTC']; // Example
 
-export const walletService = {
-  async createUserWallets(userId: string) {
-    let evmAddress = null;
-    for (const evmServer of EVM_SERVERS) {
-      try {
-        evmAddress = `evm_${userId}_${evmServer}`;
-        if (evmAddress) break;
-      } catch {}
+export class WalletService {
+  private walletRep = getRepository(WalletModel);
+  private currencyRep = getRepository(CurrencyModel);
+
+  async createWallet(userId: string, userCode: number): Promise<any> {
+    try {
+      const walletRec = await this.walletRep.exists({ _id: userId });
+
+      if (walletRec) {
+        return {
+          success: false,
+          message: "WALLET_ALREADY_EXISTS",
+          code: 404,
+          data: ""
+        }
+      }
+
+      const curList = await this.currencyRep.find({ isActive: true })
+      if (curList?.count == 0) return { success: false, message: "CURRENCY_NOT_FOUND", code: 404, data: "" }
+      // Create wallet for EVM servers
+      const insert = await this.walletRep.create({
+        _id: userId,
+        userCode: userCode,
+        assets: [...curList?.data?.map((item) => {
+          return {
+            currencyId: item._id,
+            network: {
+              symbol: item.symbol,
+            }
+          }
+        })
+        ]
+      })
+      if (!insert) return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+      return { success: true, message: "SUCCESS", code: 200, data: insert }
     }
-    const evmWallet = new WalletModel({
-      walletId: userId,
-      type: 'EVM',
-      address: evmAddress,
-      balances: {},
-    });
-    const addresses: Record<string, string> = {};
-    for (const symbol of NON_EVM_SYMBOLS) {
-      try {
-        addresses[symbol] = `non_evm_${userId}_${symbol}`;
-      } catch {}
+    catch (error) {
+      console.error(error, "createWallet");
+      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
     }
-    const nonEvmWallet = new WalletModel({
-      walletId: userId,
-      type: 'NON_EVM',
-      addresses,
-      balances: {},
-    });
-    await WalletModel.insertMany([evmWallet, nonEvmWallet]);
-    return { evmWallet, nonEvmWallet };
-  },
+  }
 
-  async getWalletByType(userId: string, type: WalletType): Promise<WalletDocument | null> {
-    const redis = await connectRedis();
-    const cacheKey = `wallet:${userId}:${type}`;
-    const cached = await redis.get(cacheKey);
-    if (cached) return JSON.parse(cached);
-    const wallet = await WalletModel.findOne({ walletId: userId, type });
-    if (wallet) await redis.set(cacheKey, JSON.stringify(wallet), { EX: 60 });
-    return wallet;
-  },
+  async getWalletById(userId: string): Promise<any> {
+    try {
+      const walletRec = await this.walletRep.findById(userId);
+      if (!walletRec) {
+        return {
+          success: false,
+          message: "WALLET_NOT_FOUND",
+          code: 404,
+          data: ""
+        }
+      }
+      return { success: true, message: "SUCCESS", code: 200, data: walletRec };
+    } catch (error) {
+      console.error("getWalletById", userId, error)
+      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
 
-  async incrementBalance(userId: string, symbol: string, type: WalletType, amount: number, balanceType: 'spot' | 'p2p' | 'perpetual') {
-    const wallet = await WalletModel.findOne({ walletId: userId, type });
-    if (!wallet) throw new Error('Wallet not found');
-    if (!wallet.balances[symbol]) wallet.balances[symbol] = { spot: 0, p2p: 0, perpetual: 0 };
-    wallet.balances[symbol][balanceType] += amount;
-    await wallet.save();
-    const redis = await connectRedis();
-    const cacheKey = `wallet:${userId}:${type}`;
-    await redis.set(cacheKey, JSON.stringify(wallet), { EX: 60 });
-    return wallet;
-  },
-
-  async getOrCreateWallets(userId: string) {
-    let evmWallet = await WalletModel.findOne({ walletId: userId, type: 'EVM' });
-    let nonEvmWallet = await WalletModel.findOne({ walletId: userId, type: 'NON_EVM' });
-    if (!evmWallet || !nonEvmWallet) {
-      const created = await walletService.createUserWallets(userId);
-      evmWallet = created.evmWallet;
-      nonEvmWallet = created.nonEvmWallet;
     }
-    return { evmWallet, nonEvmWallet };
-  },
+  }
 
-  async handleDeposit({ userId, currency, amount, txHash }) {
-    const currencyObj = await CurrencyModel.findOne({ symbol: currency });
-    if (!currencyObj) return;
-    await depositHashService.addDeposit({ userId, currency, txHash, amount });
-    const total = await depositHashService.getTotalDeposits(userId, currency);
-    if (total >= currencyObj.minDeposit) {
-      await depositHashService.confirmDeposits(userId, currency);
-      await transactionService.createDepositTransaction(userId, currency, total);
-      const type = currencyObj.isEvm ? 'EVM' : 'NON_EVM';
-      await walletService.incrementBalance(userId, currency, type, total, 'spot');
+  async creditAmount(userId: string, currencyId: string, amount: number): Promise<any> {
+    try {
+      const walletRec = await this.walletRep.findById(userId);
+      if (!walletRec) {
+        return {
+          success: false,
+          message: "WALLET_NOT_FOUND",
+          code: 404,
+          data: ""
+        }
+      }
+      const updateRecord = await this.walletRep.updateOne({ _id: userId }, { $inc: { [currencyId]: amount } });
+      if (!updateRecord) {
+        return {
+          success: false,
+          message: "WALLET_NOT_FOUND",
+          code: 404,
+          data: ""
+        }
+      }
+      return { success: true, message: "SUCCESS", code: 200, data: walletRec }
+    } catch (error) {
+      console.error(error, "creditAmount");
+      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
     }
-  },
 
-  async reachMinDeposit(userId: string, currency: string) {
-    const currencyObj = await CurrencyModel.findOne({ symbol: currency });
-    if (!currencyObj) return false;
-    const total = await depositHashService.getTotalDeposits(userId, currency);
-    return total >= currencyObj.minDeposit;
-  },
+  }
+
+  async debitAmount(userId: string, currencyId: string, amount: number): Promise<any> {
+    try {
+
+      const walletRec = await this.walletRep.findById(userId);
+      if (!walletRec) {
+        return {
+          success: false,
+          message: "WALLET_NOT_FOUND",
+          code: 404,
+          data: ""
+        }
+      }
+      if (walletRec[currencyId] < amount) {
+        return {
+          success: false,
+          message: "INSUFFICIENT_BALANCE",
+          code: 404,
+          data: ""
+        }
+      }
+      const updateRecord = await this.walletRep.updateOne({ _id: userId }, { $inc: { [currencyId]: -amount } });
+      if (!updateRecord) {
+        return {
+          success: false,
+          message: "WALLET_NOT_FOUND",
+          code: 404,
+          data: ""
+        }
+      }
+    } catch (error) {
+      console.error(error, "debitAmount");
+      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+
+    }
+  }
+
 }; 

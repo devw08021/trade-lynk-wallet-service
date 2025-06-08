@@ -1,5 +1,4 @@
 import { TransactionModel } from '../models/transaction.model';
-import { Types } from 'mongoose';
 
 export const transactionService = {
   async createDepositTransaction(userId: string, currency: string, amount: number) {

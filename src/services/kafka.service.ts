@@ -1,5 +1,5 @@
 import { Kafka, Consumer, EachMessagePayload } from 'kafkajs';
-import { walletService } from './wallet.service';
+import { WalletService } from './wallet.service';
 
 const kafka = new Kafka({
   clientId: 'wallet-service',
@@ -34,7 +34,7 @@ export async function startDepositConsumer() {
           kafkaStatus.lastMessage = { topic, partition, offset: message.offset, deposit };
           kafkaStatus.lastEvent = 'Received deposit event';
           console.log(`[Kafka] Received message:`, kafkaStatus.lastMessage);
-          await walletService.handleDeposit(deposit);
+          await WalletService.handleDeposit(deposit);
           kafkaStatus.lastEvent = 'Processed deposit event';
         } catch (err) {
           kafkaStatus.lastError = err;
