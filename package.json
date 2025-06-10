@@ -5,8 +5,8 @@
   "module": "src/index.ts",
   "type": "module",
   "scripts": {
-    "dev": "dotenv -e local.env -- bun run --watch src/index.ts",
-    "start": "dotenv -e dev.env -- bun run src/index.ts",
+    "dev": "bun run --env-file=.env.local --watch src/index.ts",
+    "start": "bun run --env-file=.env.development src/index.ts",
     "build": "bun build src/index.ts --outdir dist",
     "test": "bun test"
   },

@@ -86,7 +86,7 @@ const init = async () => {
     app.get('/kafka-status', (c) => c.json(getKafkaStatus()));
 
 
-    await startDepositConsumer();
+    // await startDepositConsumer();
 
     // not found handler
     app.notFound((c) => {
