@@ -3,53 +3,62 @@ import { WalletService } from '@/services/index';
 
 import { ApiError } from '@/utils/error';
 
+
+const walletService = new WalletService();
+
 export class WalletController {
-  private walletService: WalletService;
 
-  constructor() {
-    this.walletService = new WalletService();
-  }
 
-  async createWallet(c: Context) {
+  createWallet = async (c: Context) => {
     try {
       // const { userId } = c.get('user');
       const { userId, userCode } = await c.req.json()
-      const resp = await this.walletService.createWallet(userId, userCode);
+
+      console.log("🚀 ~ WalletController ~ createWal ~ userId, userCode:", userId, userCode)
+      const resp = await walletService.createWallet(userId, userCode);
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      throw new ApiError(500, error);
+      console.log("🚀 ~ WalletController ~ createWal ~ error:", error)
+
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
 
-  async getWallets(c: Context) {
+  getWallets = async (c: Context) => {
     try {
-      const { userId } = c.get('user');
-      const resp = await this.walletService.getWalletById(userId);
+      const { userId, userCode } = c.get('user');
+
+      let resp = await walletService.getWalletById(userCode);
+      if (resp?.success == false && resp?.message == "WALLET_NOT_FOUND") {
+        resp = await walletService.createWallet(userId, userCode);
+      }
+
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+      console.log("🚀 ~ WalletController ~ getWallets ~ error:", error)
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
 
-  async creditAmount(c: Context) {
+  creditAmount = async (c: Context) => {
     try {
       const { userId } = c.get('user');
-      const { currencyId, amount } = await c.req.json();
-      const resp = await this.walletService.creditAmount(userId, currencyId, amount);
+      const { currencyId, amount, walletType } = await c.req.json();
+      const resp = await walletService.creditAmount(userId, walletType, currencyId, amount);
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
 
   async debitAmount(c: Context) {
     try {
       const { userId } = c.get('user');
-      const { currencyId, amount } = await c.req.json();
-      const resp = await this.walletService.creditAmount(userId, currencyId, amount);
+      const { currencyId, amount, walletType } = await c.req.json();
+      const resp = await walletService.debitAmount(userId, walletType, currencyId, amount);
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
 

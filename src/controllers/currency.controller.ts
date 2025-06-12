@@ -4,7 +4,7 @@ import { CurrencyService } from '@/services/index';
 import { ApiError } from "@/utils/error";
 
 
-export class WalletController {
+export class CurrencyController {
   constructor(private currencyService: CurrencyService) { }
 
   async addCurrency(c: Context) {

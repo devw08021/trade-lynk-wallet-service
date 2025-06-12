@@ -5,8 +5,8 @@ export interface WalletBalance {
   p2p: number;
   perpetual: number;
   currencyId: ObjectId;
+  symbol: string;
   network: {
-    symbol: string;
     address: string;
     privateKey: string;
     tag: string;
@@ -28,8 +28,8 @@ const WalletSchema = new Schema<WalletDocument>({
       spot: { type: Number, default: 0 },
       p2p: { type: Number, default: 0 },
       perpetual: { type: Number, default: 0 },
+      symbol: { type: String, required: true },
       network: {
-        symbol: { type: String, required: true },
         address: { type: String, default: "" },
         privateKey: { type: String, default: "" },
         tag: { type: String, default: "" }

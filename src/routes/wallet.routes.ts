@@ -2,23 +2,23 @@ import { Hono } from 'hono';
 import { WalletController } from '../controllers/index';
 import { authMiddleware } from '../middleware/auth.middleware';
 
+const walletRoutes = new Hono();
 
 // initalize controler
 const waltCtrl = new WalletController();
 
-const walletRoutes = new Hono();
 
-// walletRoutes.use('*', authMiddleware);
+
 
 // create a new wallet
-walletRoutes.post('/createWallet', (c) => waltCtrl.createWallet(c))
+walletRoutes.post('/createWallet', authMiddleware, waltCtrl.createWallet)
 
 
 // Get a specific wallet
 walletRoutes.get('/getWallets/:currency', (c) => waltCtrl.getWallet(c))
 // Get all wallets for a user
 
-walletRoutes.get('/getWallets', (c) => waltCtrl.getWallets(c))
+walletRoutes.get('/getWallets', authMiddleware, waltCtrl.getWallets)
 // Send a transaction
 walletRoutes.post('/:walletId/transactions', (c) => waltCtrl.sendTransaction(c))
 

@@ -8,6 +8,7 @@ const envSchema = z.object({
   MONGODB_URI: z.string(),
   REDIS_URI: z.string(),
   JWT_SECRET: z.string(),
+  JWT_EXPIRES_IN:z.string(),
   BTC_NODE_URL: z.string(),
   ETH_NODE_URL: z.string(),
   TRX_NODE_URL: z.string(),
@@ -27,6 +28,7 @@ export const config = {
   },
   jwt: {
     secret: env.JWT_SECRET,
+    expiresIn: env.JWT_EXPIRES_IN,
   },
   blockchain: {
     btc: {

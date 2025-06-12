@@ -1,6 +1,12 @@
 import IORedis, { Redis } from "ioredis";
 import { config } from "./index";
 
+
+//const
+const BALANCELOG = 'balance_logs';
+const BALANCEGROUP = 'balance_group';
+const BALANCECONSUMER = 'balance_sync_worker'
+
 class RedisClient {
   private static instance: RedisClient;
   private client: Redis | null = null;
@@ -77,6 +83,16 @@ class RedisClient {
     });
   }
 
+
+  // stream balance logic for db update
+  public async balStream(): Promise<any> {
+    try {
+      const client = this.getClient();
+      await client.xgroup('CREATE', BALANCELOG, BALANCEGROUP, '0', 'MKSTREAM');
+    } catch (error) {
+
+    }
+  }
 
   // notmal redis commands
   public async set(key: string, value: string, ttlInSeconds?: number): Promise<"OK" | null> {
@@ -247,6 +263,86 @@ class RedisClient {
       return null;
     }
   }
+
+  public async incBalance(
+    walletKey: string,
+    userId: string,
+    amount: number
+  ): Promise<number | null> {
+    const script = `
+    local newBal = redis.call('HINCRBY', KEYS[1], ARGV[1], ARGV[2])
+    redis.call('XADD', 'balance_logs', '*',
+      'wallet', KEYS[1],
+      'user', ARGV[1],
+      'action', 'increment',
+      'amount', ARGV[2],
+      'new_balance', tostring(newBal)
+    )
+    return newBal
+  `;
+
+    try {
+      const client = this.getClient(); // ioredis client
+      const result = await client.eval(
+        script,
+        1,
+        walletKey,
+        userId,
+        amount.toString()
+      );
+
+      return typeof result === 'number' ? result : parseFloat(result);
+    } catch (err) {
+      console.error("Redis incBalance error:", err);
+      return null;
+    }
+  }
+
+
+  public async decBalance(
+    walletKey: string,
+    userId: string,
+    amount: number
+  ): Promise<number | null> {
+    const script = `
+    local current = tonumber(redis.call('HGET', KEYS[1], ARGV[1]) or '0')
+    local decrement = tonumber(ARGV[2])
+    if current < decrement then
+      return -1
+    end
+    local newBal = redis.call('HINCRBYFLOAT', KEYS[1], ARGV[1], -decrement)
+    redis.call('XADD', KEYS[1], '*',
+      'wallet', KEYS[1],
+      'user', ARGV[1],
+      'action', 'decrement',
+      'amount', ARGV[2],
+      'new_balance', tostring(newBal)
+    )
+    return newBal
+  `;
+
+    try {
+      const client = this.getClient(); // ioredis client
+      const result = await client.eval(
+        script,
+        1,
+        walletKey,
+        userId,
+        amount.toString()
+      );
+
+      if (result === -1) {
+        console.warn(`Insufficient balance for user ${userId}`);
+        return null; // or return -1 or throw, based on your needs
+      }
+
+      return typeof result === 'number' ? result : parseFloat(result);
+    } catch (err) {
+      console.error("Redis decBalance error:", err);
+      return null;
+    }
+  }
+
 }
 
 export const redis = RedisClient.getInstance();
@@ -254,18 +350,19 @@ export const connectRedis = async (): Promise<void> => await redis.connect();
 export const getRedisClient = (): Redis => redis.getClient();
 export const closeRedis = async (): Promise<void> => await redis.close();
 
-export const set = redis.set.bind(redis);
-export const get = redis.get.bind(redis);
-export const hget = redis.hget.bind(redis);
-export const del = redis.del.bind(redis);
-export const exists = redis.exists.bind(redis);
-export const expire = redis.expire.bind(redis);
-export const zadd = redis.zadd.bind(redis);
-export const lpush = redis.lpush.bind(redis);
-export const rpush = redis.rpush.bind(redis);
-export const lrange = redis.lrange.bind(redis);
-export const zrange = redis.zrange.bind(redis);
-export const zrem = redis.zrem.bind(redis);
-export const incNumber = redis.incNumber.bind(redis);
-export const decNumber = redis.decNumber.bind(redis);
-
+export const setRedis = redis.set.bind(redis);
+export const getRedis = redis.get.bind(redis);
+export const hgetRedis = redis.hget.bind(redis);
+export const delRedis = redis.del.bind(redis);
+export const existsRedis = redis.exists.bind(redis);
+export const expireRedis = redis.expire.bind(redis);
+export const zaddRedis = redis.zadd.bind(redis);
+export const lpushRedis = redis.lpush.bind(redis);
+export const rpushRedis = redis.rpush.bind(redis);
+export const lrangeRedis = redis.lrange.bind(redis);
+export const zrangeRedis = redis.zrange.bind(redis);
+export const zremRedis = redis.zrem.bind(redis);
+export const incNumberRedis = redis.incNumber.bind(redis);
+export const decNumberRedis = redis.decNumber.bind(redis);
+export const incBalanceRedis = redis.incBalance.bind(redis);
+export const decBalanceRedis = redis.decBalance.bind(redis);

@@ -1,7 +1,6 @@
 import bcrypt from 'bcrypt';
 import { sign, verify } from 'hono/jwt';
-import { env } from '../config/env';
-import { User, UserResponse } from '../models/schema/user';
+import { config } from '@/config/index';
 
 // Helper function to parse JWT expiration string (e.g., "1d", "2h") into seconds
 function parseExpiresIn(expiresIn: string): number {
@@ -19,10 +18,10 @@ function parseExpiresIn(expiresIn: string): number {
 }
 
 
-export async function generateToken(user: User): Promise<string> {
+export async function generateToken(user: any): Promise<string> {
   // Calculate expiration time
   const now = Math.floor(Date.now() / 1000);
-  const expiresInSeconds = parseExpiresIn(env.JWT_EXPIRES_IN);
+  const expiresInSeconds = parseExpiresIn(config.jwt.expiresIn);
 
   const payload = {
     sub: user._id!.toString(),
@@ -37,14 +36,14 @@ export async function generateToken(user: User): Promise<string> {
     exp: now + expiresInSeconds  // Expiration time
   };
 
-  const token = await sign(payload, env.JWT_SECRET, 'HS256');
+  const token = await sign(payload, config.jwt.secret, 'HS256');
   return token;
 }
 
 
 export async function verifyToken(token: string): Promise<any> {
   try {
-    const payload = await verify(token, env.JWT_SECRET, 'HS256');
+    const payload = await verify(token, config.jwt.secret, 'HS256');
     return payload;
   } catch (error) {
     throw new Error('Invalid or expired token');
@@ -59,8 +58,8 @@ export async function comparePasswords(password: string, hashedPassword: string)
   return await bcrypt.compare(password, hashedPassword);
 }
 
-export function sanitizeUser(user: User): UserResponse {
+export function sanitizeUser(user: any): any {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { password, twoFactorSecret, ...sanitizedUser } = user;
-  return sanitizedUser as UserResponse;
+  return sanitizedUser as any;
 } 
