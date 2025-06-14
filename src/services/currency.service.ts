@@ -49,13 +49,13 @@ export class CurrencyService {
       console.error(error, "updateCurrency");
       return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
     }
- 
+
   }
 
-  async getAllCurrency(): Promise<any> {
+  async getAllCurrency(filter = {}): Promise<any> {
     try {
 
-      const currencyDoc = await this.currencyRep.find({});
+      const currencyDoc = await this.currencyRep.find(filter);
       if (!currencyDoc) {
         return {
           success: false,
@@ -116,6 +116,26 @@ export class CurrencyService {
     try {
 
       const walletRec = await this.currencyRep.findById(userId);
+      if (!walletRec) {
+        return {
+          success: false,
+          message: "WALLET_NOT_FOUND",
+          code: 404,
+          data: ""
+        }
+      }
+      return { success: true, message: "SUCCESS", code: 200, data: walletRec };
+    } catch (error) {
+      console.error(error, "getCurrencyById");
+      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+
+    }
+  }
+
+  async getAllCurrencyIds(): Promise<any> {
+    try {
+
+      const walletRec = await this.currencyRep.distinct('_id', { isActive: true });
       if (!walletRec) {
         return {
           success: false,

@@ -18,7 +18,7 @@ const TransactionSchema = new Schema<TransactionDocument>({
   type: { type: String, enum: ['DEPOSIT', 'WITHDRAWAL'], required: true },
   amount: { type: Number, required: true },
   status: { type: String, enum: ['PENDING', 'COMPLETED', 'FAILED', 'REJECTED'], required: true },
-  txHash: { type: String },
+  txHash: { type: String , default:""},
   blockNumber: { type: Number },
   timestamp: { type: Date, default: Date.now },
   adminStatus: { type: String, enum: ['PENDING', 'APPROVED', 'REJECTED'], default: 'PENDING' },

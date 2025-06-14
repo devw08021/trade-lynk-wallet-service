@@ -46,13 +46,12 @@ const AddressSchema = new Schema<AddressDocument>({
   timestamps: true
 });
 
-// Create indexes for efficient querying
-AddressSchema.index({ userCode: 1 }, { unique: true });
-AddressSchema.index({ 'evm.address': 1 });
-AddressSchema.index({ 'nonEvm.address': 1 });
-AddressSchema.index({ 'evm.currencies.currencyId': 1 });
-AddressSchema.index({ 'nonEvm.currencyId': 1 });
-AddressSchema.index({ 'evm.currencies.symbol': 1 });
-AddressSchema.index({ 'nonEvm.symbol': 1 });
+// // Create indexes for efficient querying
+// AddressSchema.index({ 'evm.address': 1 });
+// AddressSchema.index({ 'nonEvm.address': 1 });
+// AddressSchema.index({ 'evm.currencies.currencyId': 1 });
+// AddressSchema.index({ 'nonEvm.currencyId': 1 });
+// AddressSchema.index({ 'evm.currencies.symbol': 1 });
+// AddressSchema.index({ 'nonEvm.symbol': 1 });
 
 export const AddressModel = mongoose.model<AddressDocument>('Address', AddressSchema);

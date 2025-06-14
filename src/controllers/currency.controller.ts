@@ -3,17 +3,18 @@ import { CurrencyService } from '@/services/index';
 
 import { ApiError } from "@/utils/error";
 
+const currencyService = new CurrencyService();
+
 
 export class CurrencyController {
-  constructor(private currencyService: CurrencyService) { }
 
   async addCurrency(c: Context) {
     try {
       const { userId } = c.get('user');
-      const resp = await this.currencyService.addCurrency(userId);
+      const resp = await currencyService.addCurrency(userId);
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      throw new ApiError(error, 500);
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
 
@@ -21,21 +22,19 @@ export class CurrencyController {
     try {
       const { userId } = c.get('user');
       const { currencyId, amount } = await c.req.json();
-      const resp = await this.currencyService.updateCurrency(userId);
+      const resp = await currencyService.updateCurrency(userId);
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
 
-  async getAllCurrency(c: Context) {
+  getAllCurrency = async (c: Context) => {
     try {
-      const { userId } = c.get('user');
-      const { currencyId, amount } = await c.req.json();
-      const resp = await this.currencyService.getAllCurrency(userId, currencyId, amount);
+      const resp = await currencyService.getActiveCurrency();
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
 
@@ -43,20 +42,20 @@ export class CurrencyController {
     try {
       const { userId } = c.get('user');
       const { currencyName } = await c.req.json();
-      const resp = await this.currencyService.getCurrencyByName(userId, currencyName);
+      const resp = await currencyService.getCurrencyByName(userId, currencyName);
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
   async getCurrencyById(c: Context) {
     try {
       const { userId } = c.get('user');
       const { currencyId } = await c.req.json();
-      const resp = await this.currencyService.getCurrencyById(userId, currencyId);
+      const resp = await currencyService.getCurrencyById(userId, currencyId);
       return c.json(resp, resp?.code ?? 500);
     } catch (error) {
-      return { success: false, message: "INTERNAL_SERVER_ERROR", code: 500, data: "" }
+      return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
 

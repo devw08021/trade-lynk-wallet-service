@@ -2,10 +2,14 @@ import mongoose, { Schema, Document, ObjectId } from 'mongoose';
 
 // Common interface for wallet balances
 export interface WalletBalance {
+  funding: number,
   spot: number;
+  spotLock: number;
   p2p: number;
+  p2pLock: number;
   perpetual: number;
-  currencyId: ObjectId;
+  perpetualLock: number;
+  coinId: ObjectId;
   symbol: string;
 }
 
@@ -19,10 +23,14 @@ export interface WalletDocument extends Document {
 const WalletSchema = new Schema<WalletDocument>({
   userCode: { type: Number, required: true, index: true },
   balances: [{
-    currencyId: { type: Schema.Types.ObjectId, required: true },
+    coinId: { type: Schema.Types.ObjectId, required: true },
+    funding: { type: Number, default: 0 },
     spot: { type: Number, default: 0 },
+    spotLock: { type: Number, default: 0 },
     p2p: { type: Number, default: 0 },
+    p2pLock: { type: Number, default: 0 },
     perpetual: { type: Number, default: 0 },
+    perpetualLock: { type: Number, default: 0 },
     symbol: { type: String, required: true }
   }]
 }, {

@@ -29,7 +29,6 @@ const AdminWalletSchema = new Schema<AdminWalletDocument>({
 });
 
 // Create indexes
-AdminWalletSchema.index({ userCode: 1 }, { unique: true });
 AdminWalletSchema.index({ 'wallets.chainId': 1, 'wallets.address': 1 }, { unique: true });
 AdminWalletSchema.index({ 'wallets.isActive': 1 });
 

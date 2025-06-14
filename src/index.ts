@@ -89,9 +89,8 @@ const init = async () => {
 
     // await startDepositConsumer();
     const walletService = new WalletService();
-    const resp = await walletService.createWallet(123456);
-    console.log("🚀 ~ init ~ resp:", resp)
-
+    // const resp = await walletService.creditAmount(1, 'funding', '6845bf5dea020d0cc8b7f38d', 10);
+    walletService.redis_to_DB_bal_update()
     // not found handler
     app.notFound((c) => {
       return c.json({ success: false, message: "Not Found" }, 404);

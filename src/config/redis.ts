@@ -90,6 +90,7 @@ class RedisClient {
       const client = this.getClient();
       await client.xgroup('CREATE', BALANCELOG, BALANCEGROUP, '0', 'MKSTREAM');
     } catch (error) {
+    console.log("🚀 ~ RedisClient ~ balStream ~ error:", error)
 
     }
   }
@@ -311,7 +312,7 @@ class RedisClient {
       return -1
     end
     local newBal = redis.call('HINCRBYFLOAT', KEYS[1], ARGV[1], -decrement)
-    redis.call('XADD', KEYS[1], '*',
+    redis.call('XADD', 'balance_logs', '*',
       'wallet', KEYS[1],
       'user', ARGV[1],
       'action', 'decrement',
@@ -343,6 +344,44 @@ class RedisClient {
     }
   }
 
+
+  //multi get
+  public async multiHget(pairs: { key: string, field: string }[]): Promise<(string | null)[] | null> {
+    try {
+      const client = this.getClient();
+      const multi = client.multi();
+
+      for (const { key, field } of pairs) {
+        multi.hget(key, field);
+      }
+
+      const results = await multi.exec();
+
+      // Return only the values
+      return results?.map(([_, res]) => res ?? '') ?? [];
+    } catch (err) {
+      console.error("Redis multi HGET error:", err);
+      return null;
+    }
+  }
+  public async multiHset(entries: { key: string; field: string; value: string }[]): Promise<boolean> {
+    try {
+      const client = this.getClient();
+      const multi = client.multi();
+
+      for (const { key, field, value } of entries) {
+        multi.hset(key, field, value);  // This is valid in redis@4
+      }
+
+      const results = await multi.exec();
+      return results ? true : false;
+    } catch (err) {
+      console.error("Redis multiHset error:", err);
+      return false;
+    }
+  }
+
+
 }
 
 export const redis = RedisClient.getInstance();
@@ -366,3 +405,5 @@ export const incNumberRedis = redis.incNumber.bind(redis);
 export const decNumberRedis = redis.decNumber.bind(redis);
 export const incBalanceRedis = redis.incBalance.bind(redis);
 export const decBalanceRedis = redis.decBalance.bind(redis);
+export const multiHget = redis.multiHget.bind(redis);
+export const multiHset = redis.multiHset.bind(redis);
