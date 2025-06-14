@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { ExecutionContext, Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
@@ -12,6 +12,7 @@ import { connect } from "./config/database";
 import { connectRedis, getRedisClient, closeRedis } from "./config/redis";
 
 import { startDepositConsumer, getKafkaStatus } from './services/kafka.service';
+import { WalletService } from './services/wallet.service';
 
 let app: Hono;
 
@@ -59,7 +60,7 @@ const init = async () => {
     // 1) set up error handler
     app.onError((err, c) => {
       if (err instanceof ApiError) {
-        return c.json({ success: false, errors: err.info }, err.status);
+        return c.json({ success: false, errors: err.info }, err.status as any);
       }
       if (process.env.NODE_ENV !== 'production') console.error(err);
       return c.json(
@@ -87,6 +88,9 @@ const init = async () => {
 
 
     // await startDepositConsumer();
+    const walletService = new WalletService();
+    const resp = await walletService.createWallet(123456);
+    console.log("🚀 ~ init ~ resp:", resp)
 
     // not found handler
     app.notFound((c) => {

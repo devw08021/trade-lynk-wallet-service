@@ -3,17 +3,19 @@ import mongoose, { Schema, Document } from 'mongoose';
 export interface CurrencyDocument extends Document {
   symbol: string;
   name: string;
-  network: {
-    chainId: string;
-    chainName: string;
-    decimals: number;
-    rpcUrls: string[];
-    symbol: string;
-    address: string;
-    privateKey: string;
-    tag: string;
-    isActive: boolean;
-  }
+  network: string;  // eth, bnb, btc
+  contractAddress: string;
+    // network: {
+    // chainId: string;
+    // chainName: string;
+    // decimals: number;
+    // rpcUrls: string[];
+    // symbol: string;
+    // tag: string;
+    // isActive: boolean;
+  // }
+  type: string;
+  tokenType: string;
   isEvm: boolean;
   withdrawalFee: number;
   minDeposit: number;
@@ -25,8 +27,12 @@ export interface CurrencyDocument extends Document {
 }
 
 const CurrencySchema = new Schema<CurrencyDocument>({
+  network: { type: String, required: true },
   symbol: { type: String, required: true, unique: true },
   name: { type: String, required: true },
+  contractAddress: { type: String, required: true },
+  type: { type: String, required: true },
+  tokenType: { type: String, required: true },
   isEvm: { type: Boolean, required: true },
   withdrawalFee: { type: Number, required: true },
   minDeposit: { type: Number, required: true },
@@ -35,16 +41,14 @@ const CurrencySchema = new Schema<CurrencyDocument>({
   dailyLimit: { type: Number, required: true },
   image: { type: String, required: true },
   isActive: { type: Boolean, default: true },
-  network: [{
-    chainId: { type: String, required: true },
-    chainName: { type: String, required: true },
-    decimals: { type: Number, required: true },
-    rpcUrls: { type: [String], required: true },
-    symbol: { type: String, required: true },
-    address: { type: String, required: true },  // admin address
-    privateKey: { type: String, required: true }, // admin private key
-    tag: { type: String },
-  }]
+// network: [{
+    // chainId: { type: String, required: true },
+    // chainName: { type: String, required: true },
+    // decimals: { type: Number, required: true },
+    // rpcUrls: { type: [String], required: true },
+    // symbol: { type: String, required: true },
+    // tag: { type: String },
+  // }]
 });
 
 export const CurrencyModel = mongoose.model<CurrencyDocument>('Currency', CurrencySchema); 

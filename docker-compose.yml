@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  redpanda:
+    image: vectorized/redpanda:v23.3.0
+    container_name: redpanda
+    environment:
+      - REDPANDA_NODE_ID=1
+      - REDPANDA_LISTENERS=rp://0.0.0.0:9092
+      - REDPANDA_ADVERTISED_LISTENER=rp://redpanda:9092
+      - REDPANDA_LISTENER_SECURITY_PROTOCOL=PLAINTEXT
+      - REDPANDA_LOG_LEVEL=info
+      - REDPANDA_SEED_SERVERS=redpanda:9092
+      - REDPANDA_DEFAULT_TOPIC_PARTITION_COUNT=1
+      - REDPANDA_DEFAULT_TOPIC_REPLICATION_FACTOR=1
+      - REDPANDA_AUTO_CREATE_TOPICS=false
+      - REDPANDA_KAFKA_API=true
+    ports:
+      - "9092:9092"  # Kafka port
+    volumes:
+      - redpanda-data:/var/lib/redpanda/data
+    networks:
+      - redpanda-net
+    restart: unless-stopped
+
+  # Optional: You can add a Kafka client to test if everything works
+  kafka-client:
+    image: wurstmeister/kafka
+    container_name: kafka-client
+    environment:
+      - KAFKA_BROKER=redpanda:9092
+    networks:
+      - redpanda-net
+    depends_on:
+      - redpanda
+    restart: unless-stopped
+
+networks:
+  redpanda-net:
+    driver: bridge
+
+volumes:
+  redpanda-data:
+    driver: local

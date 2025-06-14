@@ -9,10 +9,10 @@ const envSchema = z.object({
   REDIS_URI: z.string(),
   JWT_SECRET: z.string(),
   JWT_EXPIRES_IN:z.string(),
-  BTC_NODE_URL: z.string(),
-  ETH_NODE_URL: z.string(),
-  TRX_NODE_URL: z.string(),
-  BNB_NODE_URL: z.string(),
+  BTC_SERVICE_URL: z.string(),
+  ETH_SERVICE_URL: z.string(),
+  TRX_SERVICE_URL: z.string(),
+  BNB_SERVICE_URL: z.string(),
   WEBHOOK_SECRET: z.string(),
 });
 
