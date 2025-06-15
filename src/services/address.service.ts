@@ -1,7 +1,6 @@
 import { getRepository } from "@/models/repositoryFactory";
 import { AddressModel, CurrencyModel, AdminWalletModel } from "@/models/schemas/index";
 import { CurrencyDocument } from "@/models/schemas/currency";
-import { AdminWalletDocument } from "@/models/schemas/adminWallet";
 import axios from 'axios';
 
 

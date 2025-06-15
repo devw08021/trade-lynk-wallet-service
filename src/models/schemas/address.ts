@@ -26,7 +26,7 @@ export interface AddressDocument extends Document {
 }
 
 const AddressSchema = new Schema<AddressDocument>({
-  userCode: { type: Number, required: true, unique: true },
+  userCode: { type: Number, required: true },
   evm: {
     address: { type: String, required: true },
     privateKey: { type: String, required: true },
