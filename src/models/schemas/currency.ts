@@ -42,6 +42,7 @@ const CurrencySchema = new Schema<CurrencyDocument>({
     maxDeposit: { type: Number, required: true },
     minWithdraw: { type: Number, required: true },
     dailyLimit: { type: Number, required: true },
+    isEvm: { type: Boolean, required: true },
   }]
 });
 
