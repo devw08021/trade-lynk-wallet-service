@@ -16,6 +16,9 @@ walletRoutes.get('/getCurrency', authMiddleware, currCtrl.getAllCurrency)
 // withdraw
 walletRoutes.post('/withdraw', authMiddleware, waltCtrl.withdrawRequest)
 walletRoutes.post('/transfer', authMiddleware, waltCtrl.transfer)
+
+
+walletRoutes.post('/getDepositAddress', authMiddleware, waltCtrl.getDepositAddress)
 // Get a specific wallet
 walletRoutes.get('/getWallets/:currency', (c) => waltCtrl.getWallet(c))
 

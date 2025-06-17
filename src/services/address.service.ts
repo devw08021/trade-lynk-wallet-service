@@ -24,16 +24,21 @@ export class AddressService {
   }
 
   private async generateAddress(currency: CurrencyDocument): Promise<{ address: string; privateKey: string }> {
+    console.log("generateAddress")
+    return {
+      address: "response.data.address",
+      privateKey: "response.data.privateKey"
+    };
     const serviceMap: Record<string, string> = {
       'eth': process.env.ETH_SERVICE_URL + '/wallet',
       'bnb': process.env.BNB_SERVICE_URL + '/wallet',
       'btc': process.env.BTC_SERVICE_URL + '/wallet'
     };
     console.log("serviceMap", serviceMap.eth)
-    const serviceUrl = serviceMap[currency.network.toLowerCase()];
-    console.log("serviceUrl", serviceUrl, currency.network)
+    const serviceUrl = serviceMap[currency.chainName.toLowerCase()];
+    console.log("serviceUrl", serviceUrl, currency.chainName)
     if (!serviceUrl) {
-      throw new Error(`No service available for currency: ${currency.network}`);
+      throw new Error(`No service available for currency: ${currency.chainName}`);
     }
 
     try {
@@ -214,19 +219,45 @@ export class AddressService {
     }
   }
 
-  async getWalletByAddress(address: string): Promise<AddressResponse> {
+  async getDepositAddress(userId: string, userCode: string, coinId: string, chainName: string): Promise<AddressResponse> {
     try {
-      let wallet = await this.addressRep.findOne({ 'evm.address': address });
-
-      if (!wallet) {
-        wallet = await this.addressRep.findOne({ 'nonEvm.address': address });
+      let currDoc = await this.currencyRep.findById(coinId);
+      if (!currDoc) {
+        return this.createErrorResponse("INVALID_CURRENCY_ID");
       }
 
-      if (!wallet) {
+      let chain = currDoc.network.find((chain: any) => {
+        return chain.chainName === chainName
+      })
+      if (!chain) {
         return this.createErrorResponse("WALLET_NOT_FOUND", 404);
       }
 
-      return this.createSuccessResponse(wallet);
+      // check if currecny already excist
+      let isEvm = chain.isEvm, addDoc = null, depostAddress;
+      if (isEvm) {
+        addDoc = await this.addressRep.findOne({ userCode, "evm.currencies": { $elemMatch: { currencyId: coinId } } })
+      } else {
+        addDoc = await this.addressRep.findOne({ userCode, "nonEvm": { $elemMatch: { currencyId: coinId } } })
+      }
+
+      if (!addDoc) {
+
+        let { address, privateKey } = await this.generateAddress(chain)
+
+        addDoc = await this.addressRep.findOneAndUpdate({ userCode }, {
+          $push: {
+            ...(isEvm ? { "evm.currencies": { currencyId: coinId, address, privateKey } } : { "nonEvm": { currencyId: coinId, address, privateKey } })
+          }
+        }, { new: true, upsert: true })
+
+        depostAddress = address
+      } else {
+        depostAddress = isEvm ? addDoc.evm.address : addDoc.nonEvm.find((w: any) => w.currencyId == coinId).address
+      }
+
+
+      return this.createSuccessResponse({ address: depostAddress });
     } catch (error) {
       console.error("getWalletByAddress", error);
       return this.createErrorResponse("INTERNAL_SERVER_ERROR");

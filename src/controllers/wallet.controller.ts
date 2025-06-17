@@ -1,11 +1,11 @@
 import { Context } from 'hono';
-import { WalletService, TransactionService, CurrencyService } from '@/services/index';
+import { WalletService, TransactionService, CurrencyService, AddressService } from '@/services/index';
 import { multiHget, multiHset } from '@/config/redis'
-import { symbol } from 'zod';
 
 const walletService = new WalletService();
 const transactionService = new TransactionService();
 const currencyService = new CurrencyService();
+const addressService = new AddressService();
 export class WalletController {
 
 
@@ -142,6 +142,23 @@ export class WalletController {
       return c.json({ success: false, message: "INTERNAL_SERVER_ERROR" }, 500);
     }
   }
+
+  getDepositAddress = async (c: Context) => {
+    try {
+      const { userCode, userId } = c.get('user');
+      const { coinId, chainName } = await c.req.json();
+      const resp = await addressService.getDepositAddress(userId, userCode, coinId, chainName);
+      return c.json(resp, resp?.code ?? 500);
+    } catch (error) {
+      console.log("🚀 ~ WalletController ~ getDepositAddress= ~ error:", error)
+      return c.json({
+        success: false,
+        message: "INTERNAL_SERVER_ERROR",
+        data: null
+      }, 500);
+    }
+  }
+
   ethServiceInitialization = async (c: Context) => {
     try {
       const addresses = await walletService.getAllEvmAddresses();

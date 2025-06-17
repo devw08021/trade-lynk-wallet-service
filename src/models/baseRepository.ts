@@ -80,6 +80,20 @@ export abstract class BaseRepository<T extends Document> {
       .lean<LeanDoc<T>>({ virtuals: true })
       .exec();
   }
+
+  async findOneAndUpdate(
+    filter: Partial<Record<keyof T, any>>,
+    updateData: Partial<T>,
+    options: {
+      upsert?: boolean;
+      new?: boolean;
+    }
+  ): Promise<LeanDoc<T> | null> {
+    return this.model
+      .findOneAndUpdate(filter, { ...updateData, updatedAt: new Date() }, options)
+      .lean<LeanDoc<T>>({ virtuals: true })
+  }
+
   async updateMany(
     filter: Partial<Record<keyof T, any>>,
     updateData: Partial<T>
