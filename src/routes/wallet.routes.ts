@@ -11,7 +11,7 @@ walletRoutes.get('/getWallets', authMiddleware, waltCtrl.getWallets)
 
 
 // currency
-walletRoutes.get('/getCurrency', authMiddleware, currCtrl.getAllCurrency)
+walletRoutes.get('/getCurrency', authMiddleware, currCtrl.getActiveCurrency)
 
 // withdraw
 walletRoutes.post('/withdraw', authMiddleware, waltCtrl.withdrawRequest)

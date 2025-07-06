@@ -3,7 +3,7 @@ import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
 import { config } from './config';
-import { walletRoutes } from './routes/index';
+import { walletRoutes, adminRoutes } from './routes/index';
 
 
 import { ApiError } from './utils/error';
@@ -77,6 +77,7 @@ const init = async () => {
 
     // Routes
     app.route('/api/v1/wallets', walletRoutes);
+    app.route('/api/admin', adminRoutes);
     // app.route('/api/v1/transactions', transactionRoutes);
     // app.route('/api/v1/webhooks', webhookRoutes);
 

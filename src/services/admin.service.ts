@@ -1,4 +1,4 @@
-import { transactionService } from './transaction.service';
+import { TransactionService } from './index';
 import { coinService } from './coin.service';
 
 export const adminService = {
@@ -6,11 +6,11 @@ export const adminService = {
     // Call coinService to process withdrawal
     const txHash = await coinService.withdraw(userId, symbol, amount, address);
     // Update transaction status
-    return await transactionService.updateStatus(txId, 'COMPLETED', 'APPROVED');
+    return await TransactionService.updateStatus(txId, 'COMPLETED', 'APPROVED');
   },
 
   async rejectWithdrawal(txId: string, reason: string) {
     // Update transaction status to rejected
-    return await transactionService.updateStatus(txId, 'REJECTED', 'REJECTED', reason);
+    return await TransactionService.updateStatus(txId, 'REJECTED', 'REJECTED', reason);
   },
 }; 

@@ -27,7 +27,7 @@ const CurrencySchema = new Schema<CurrencyDocument>({
   symbol: { type: String, required: true, unique: true },
   name: { type: String, required: true },
   type: { type: String, required: true }, // 'coin' or 'token'
-  image: { type: String, required: true },
+  image: { type: String, default: "" },
   isActive: { type: Boolean, required: true },
   network: [{
     chainId: { type: String, required: true },
@@ -44,6 +44,8 @@ const CurrencySchema = new Schema<CurrencyDocument>({
     dailyLimit: { type: Number, required: true },
     isEvm: { type: Boolean, required: true },
   }]
+}, {
+  timestamps: true
 });
 
 export const CurrencyModel = mongoose.model<CurrencyDocument>('Currency', CurrencySchema); 
